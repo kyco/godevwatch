@@ -73,6 +73,15 @@ func main() {
 	// Determine mode: enable watch if explicitly requested or if build/run commands are configured
 	enableWatch := *watchMode || (config.BuildCmd != "" && config.RunCmd != "")
 
+	// Clean up any processes on the ports we're going to use
+	log.Println("Checking for existing processes on configured ports...")
+	if err := godevwatch.KillProcessOnPort(config.ProxyPort); err != nil {
+		log.Printf("Warning: Failed to clean up proxy port: %v", err)
+	}
+	if err := godevwatch.KillProcessOnPort(config.BackendPort); err != nil {
+		log.Printf("Warning: Failed to clean up backend port: %v", err)
+	}
+
 	// Create build tracker
 	buildTracker := godevwatch.NewBuildTracker(config.BuildStatusDir)
 

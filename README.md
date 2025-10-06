@@ -9,6 +9,7 @@ A development server and live reload tool for Go applications. Provides automati
 - 📊 **Build Tracking**: Real-time build status notifications with timestamps
 - 🎯 **Zero Config**: Works out of the box with sensible defaults
 - 🛠️ **Customizable**: Configure via YAML or command-line flags
+- 🧹 **Port Cleanup**: Automatically kills processes on configured ports before starting
 
 ## Installation
 
@@ -126,7 +127,16 @@ godevwatch
 
 ## How It Works
 
-### File Watching & Build Restart
+### Startup
+
+When godevwatch starts:
+
+1. **Port Cleanup**: Uses `lsof` to find and kill (SIGTERM) any processes listening on the proxy and backend ports
+2. **File Watcher Setup**: Initializes file watching if `build_cmd` and `run_cmd` are configured
+3. **Proxy Server Start**: Starts the proxy server on the configured port
+4. **Initial Build**: Triggers an initial build and run cycle
+
+### File Watching
 
 godevwatch uses `fsnotify` to watch for file changes. When files change:
 
