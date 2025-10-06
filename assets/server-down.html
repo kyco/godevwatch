@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Waiting for Server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: white;
+        color: black;
+        padding: 2rem;
+      }
+      .container {
+        position: fixed;
+        top: 2rem;
+        left: 2rem;
+        text-align: left;
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #e5e5e5;
+        border-top: 2px solid #92400e;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      h1 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      #build-status {
+        margin-top: 1rem;
+      }
+      .build {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        font-family: monospace;
+        display: flex;
+        align-items: center;
+      }
+      .build:first-child {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+      }
+      .build.building {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .build.failed {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .build.aborted {
+        background: #e5e5e5;
+        color: #404040;
+      }
+      .info-alert {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        font-family: monospace;
+        display: flex;
+        align-items: center;
+        background: #bfdbfe;
+        color: #1e3a8a;
+      }
+      .info-alert .spinner {
+        border-top-color: #1e3a8a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Waiting for Server</h1>
+      <div id="build-status"></div>
+    </div>
+    <script>
+      const formatBuildId = (id) => {
+        const parts = id.split('-')
+        if (parts.length < 2) return id
+
+        const timestamp = parseInt(parts[0])
+        const date = new Date(timestamp * 1000)
+        const hours = date.getHours().toString().padStart(2, '0')
+        const minutes = date.getMinutes().toString().padStart(2, '0')
+        const seconds = date.getSeconds().toString().padStart(2, '0')
+        const ms = date.getMilliseconds().toString().padStart(3, '0')
+
+        return `${hours}:${minutes}:${seconds}.${ms}`
+      }
+
+      const updateBuildStatus = async () => {
+        try {
+          const builds = await fetch('/.godevwatch-build-status').then((r) => r.json())
+          const buildStatus = document.getElementById('build-status')
+
+          if (builds.length > 0) {
+            buildStatus.innerHTML = builds
+              .reverse()
+              .map((b) => {
+                const spinner = b.status === 'building' ? '<div class="spinner"></div>' : ''
+                const formattedId = formatBuildId(b.id)
+                return `<div class="build ${b.status}">${formattedId} - ${b.status}${spinner}</div>`
+              })
+              .join('')
+          } else {
+            buildStatus.innerHTML = '<div class="info-alert">Waiting for backend server...</div>'
+          }
+        } catch {}
+      }
+
+      let ws = null
+      let hasSeenBuilds = false
+
+      const connectWebSocket = () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        ws = new WebSocket(`${protocol}//${window.location.host}/.godevwatch-ws`)
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data)
+          if (data.type === 'server-status' && data.status === 'running') {
+            location.reload()
+          } else if (data.type === 'build-status') {
+            const buildStatus = document.getElementById('build-status')
+            const builds = data.builds || []
+
+            if (builds.length > 0) {
+              hasSeenBuilds = true
+              buildStatus.innerHTML = builds
+                .reverse()
+                .map((b) => {
+                  const spinner = b.status === 'building' ? '<div class="spinner"></div>' : ''
+                  const formattedId = formatBuildId(b.id)
+                  return `<div class="build ${b.status}">${formattedId} - ${b.status}${spinner}</div>`
+                })
+                .join('')
+            } else {
+              if (hasSeenBuilds) {
+                buildStatus.innerHTML = '<div class="info-alert">refreshing<div class="spinner"></div></div>'
+              } else {
+                buildStatus.innerHTML = '<div class="info-alert">Waiting for backend server...</div>'
+              }
+            }
+          }
+        }
+
+        ws.onerror = () => {
+          ws.close()
+        }
+
+        ws.onclose = () => {
+          setTimeout(connectWebSocket, 2000)
+        }
+      }
+
+      connectWebSocket()
+      updateBuildStatus()
+    </script>
+  </body>
+</html>

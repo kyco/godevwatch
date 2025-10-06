@@ -1,0 +1,25 @@
+# godevwatch configuration file
+# Place this file in your project root as godevwatch.yaml
+
+# Port for the development proxy server
+proxy_port: 3000
+
+# Port of your backend Go server
+backend_port: 8080
+
+# Directory where build status files are stored
+build_status_dir: tmp/.build-counters
+
+# File patterns to watch for changes
+watch:
+  - "**/*.go"
+  - "**/*.templ"
+
+# Command to build your application
+build_cmd: "templ generate && go build -o ./tmp/main ."
+
+# Command to run your application
+run_cmd: "./tmp/main"
+
+# Whether to inject the live reload script into HTML responses
+inject_script: true
