@@ -24,6 +24,8 @@ func main() {
 		backendPort  = flag.Int("backend-port", 8080, "Backend server port")
 		statusDir    = flag.String("status-dir", "tmp/.build-counters", "Build status directory")
 		injectScript = flag.Bool("inject-script", true, "Inject live reload script into HTML responses")
+		watchMode    = flag.Bool("watch", false, "Enable file watching and auto-rebuild")
+		proxyOnly    = flag.Bool("proxy-only", false, "Run only the proxy server (no file watching)")
 		initConfig   = flag.Bool("init", false, "Create a default configuration file")
 		showVersion  = flag.Bool("version", false, "Show version information")
 	)
@@ -69,6 +71,26 @@ func main() {
 		}
 	}
 
+	// Determine mode
+	enableWatch := *watchMode || (!*proxyOnly && config.BuildCmd != "" && config.RunCmd != "")
+
+	// Create build tracker
+	buildTracker := godevwatch.NewBuildTracker(config.BuildStatusDir)
+
+	// Create file watcher if enabled
+	var watcher *godevwatch.FileWatcher
+	if enableWatch {
+		watcher, err = godevwatch.NewFileWatcher(config, buildTracker)
+		if err != nil {
+			log.Fatalf("Failed to create file watcher: %v", err)
+		}
+		defer watcher.Stop()
+
+		if err := watcher.Start(); err != nil {
+			log.Fatalf("Failed to start file watcher: %v", err)
+		}
+	}
+
 	// Create proxy server
 	proxy, err := godevwatch.NewProxyServer(config)
 	if err != nil {
@@ -83,6 +105,9 @@ func main() {
 	go func() {
 		<-sigChan
 		fmt.Println("\nShutting down gracefully...")
+		if watcher != nil {
+			watcher.Stop()
+		}
 		proxy.Close()
 		os.Exit(0)
 	}()
