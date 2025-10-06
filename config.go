@@ -13,6 +13,7 @@ type Config struct {
 	BackendPort    int      `yaml:"backend_port"`
 	BuildStatusDir string   `yaml:"build_status_dir"`
 	Watch          []string `yaml:"watch"`
+	WatchIgnore    []string `yaml:"watch_ignore"`
 	BuildCmd       string   `yaml:"build_cmd"`
 	RunCmd         string   `yaml:"run_cmd"`
 	InjectScript   bool     `yaml:"inject_script"`
@@ -25,7 +26,8 @@ func DefaultConfig() *Config {
 		BackendPort:    8080,
 		BuildStatusDir: "tmp/.build-counters",
 		Watch:          []string{"**/*.go", "**/*.templ"},
-		BuildCmd:       "go build -o ./tmp/main .",
+		WatchIgnore:    []string{"**/*_templ.go"},
+		BuildCmd:       "templ generate && go build -o ./tmp/main .",
 		RunCmd:         "./tmp/main",
 		InjectScript:   true,
 	}

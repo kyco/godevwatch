@@ -90,6 +90,10 @@ watch:
   - "**/*.go"
   - "**/*.templ"
 
+# File patterns to ignore (takes precedence over watch patterns)
+watch_ignore:
+  - "**/*_templ.go"
+
 # Command to build your application
 build_cmd: "templ generate && go build -o ./tmp/main ."
 
@@ -116,6 +120,8 @@ build_status_dir: tmp/.build-counters
 watch:
   - "**/*.go"
   - "**/*.templ"
+watch_ignore:
+  - "**/*_templ.go"
 build_cmd: "templ generate && go build -o ./tmp/main ."
 run_cmd: "./tmp/main"
 inject_script: true
@@ -283,7 +289,7 @@ func main() {
     config := godevwatch.DefaultConfig()
     config.ProxyPort = 3000
     config.BackendPort = 8080
-    config.BuildCmd = "go build -o ./tmp/main ."
+    config.BuildCmd = "templ generate && go build -o ./tmp/main ."
     config.RunCmd = "./tmp/main"
 
     buildTracker := godevwatch.NewBuildTracker(config.BuildStatusDir)

@@ -131,6 +131,24 @@ func (fw *FileWatcher) processFileEvents() {
 
 // shouldWatch checks if a file matches the watch patterns
 func (fw *FileWatcher) shouldWatch(path string) bool {
+	// First check if file should be ignored
+	for _, pattern := range fw.config.WatchIgnore {
+		// Simple glob matching
+		matched, err := filepath.Match(pattern, filepath.Base(path))
+		if err == nil && matched {
+			return false
+		}
+
+		// Check extension-based matching (e.g., **/*_templ.go)
+		if strings.Contains(pattern, "**/*") {
+			suffix := strings.TrimPrefix(pattern, "**/*")
+			if strings.HasSuffix(path, suffix) {
+				return false
+			}
+		}
+	}
+
+	// Then check if file matches watch patterns
 	for _, pattern := range fw.config.Watch {
 		// Simple glob matching
 		matched, err := filepath.Match(pattern, filepath.Base(path))
