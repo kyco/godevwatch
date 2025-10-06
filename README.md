@@ -46,7 +46,7 @@ This will:
 godevwatch \
   --proxy-port 3000 \
   --backend-port 8080 \
-  --status-dir tmp/.build-counters \
+  --status-dir tmp/.build-status \
   --inject-script=true
 ```
 
@@ -54,7 +54,7 @@ Available flags:
 - `--config <path>`: Path to configuration file
 - `--proxy-port <port>`: Proxy server port (default: 3000)
 - `--backend-port <port>`: Backend server port (default: 8080)
-- `--status-dir <path>`: Build status directory (default: tmp/.build-counters)
+- `--status-dir <path>`: Build status directory (default: tmp/.build-status)
 - `--inject-script`: Inject live reload script into HTML (default: true)
 - `--watch`: Explicitly enable file watching and auto-rebuild
 - `--init`: Create a default configuration file
@@ -76,7 +76,7 @@ proxy_port: 3000
 backend_port: 8080
 
 # Directory where build status files are stored
-build_status_dir: tmp/.build-counters
+build_status_dir: tmp/.build-status
 
 # File patterns to watch for changes
 watch:
@@ -109,7 +109,7 @@ Use godevwatch for everything - file watching, building, running, and proxying.
 ```yaml
 proxy_port: 3000
 backend_port: 8080
-build_status_dir: tmp/.build-counters
+build_status_dir: tmp/.build-status
 watch:
   - "**/*.go"
   - "**/*.templ"
@@ -157,7 +157,7 @@ This approach mimics `watchexec --restart` behavior but integrated directly into
 Build status is tracked via files in the status directory:
 
 ```
-tmp/.build-counters/
+tmp/.build-status/
   ├── 1234567890-12345-building
   ├── 1234567891-12346-failed
   └── 1234567892-12347-aborted

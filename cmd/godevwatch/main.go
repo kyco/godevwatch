@@ -22,7 +22,7 @@ func main() {
 		configPath   = flag.String("config", "", "Path to configuration file")
 		proxyPort    = flag.Int("proxy-port", 3000, "Proxy server port")
 		backendPort  = flag.Int("backend-port", 8080, "Backend server port")
-		statusDir    = flag.String("status-dir", "tmp/.build-counters", "Build status directory")
+		statusDir    = flag.String("status-dir", "tmp/.build-status", "Build status directory")
 		injectScript = flag.Bool("inject-script", true, "Inject live reload script into HTML responses")
 		watchMode    = flag.Bool("watch", false, "Enable file watching and auto-rebuild")
 		initConfig   = flag.Bool("init", false, "Create a default configuration file")

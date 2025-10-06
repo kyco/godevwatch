@@ -24,7 +24,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		ProxyPort:      3000,
 		BackendPort:    8080,
-		BuildStatusDir: "tmp/.build-counters",
+		BuildStatusDir: "tmp/.build-status",
 		Watch:          []string{"**/*.go", "**/*.templ"},
 		WatchIgnore:    []string{"**/*_templ.go"},
 		BuildCmd:       "templ generate && go build -o ./tmp/main .",
