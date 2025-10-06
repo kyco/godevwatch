@@ -13,7 +13,7 @@ A development server and live reload tool for Go applications. Provides automati
 ## Installation
 
 ```bash
-go install github.com/yourusername/godevwatch/cmd/godevwatch@latest
+go install github.com/kyco/godevwatch/cmd/godevwatch@latest
 ```
 
 ## Quick Start
@@ -198,7 +198,7 @@ godevwatch/
 ### Building from Source
 
 ```bash
-git clone https://github.com/yourusername/godevwatch
+git clone https://github.com/kyco/godevwatch
 cd godevwatch
 go build -o godevwatch ./cmd/godevwatch
 ```
@@ -212,7 +212,7 @@ package main
 
 import (
     "log"
-    "github.com/yourusername/godevwatch"
+    "github.com/kyco/godevwatch"
 )
 
 func main() {
