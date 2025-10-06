@@ -39,14 +39,6 @@ This will:
 - Start a proxy server on port `3000`
 - Provide live reload in the browser
 
-### Proxy-Only Mode
-
-If you want to use your own file watcher (watchexec, air, etc.), you can run just the proxy:
-
-```bash
-godevwatch --proxy-only
-```
-
 ### Command-Line Flags
 
 ```bash
@@ -54,7 +46,6 @@ godevwatch \
   --proxy-port 3000 \
   --backend-port 8080 \
   --status-dir tmp/.build-counters \
-  --watch \
   --inject-script=true
 ```
 
@@ -64,10 +55,11 @@ Available flags:
 - `--backend-port <port>`: Backend server port (default: 8080)
 - `--status-dir <path>`: Build status directory (default: tmp/.build-counters)
 - `--inject-script`: Inject live reload script into HTML (default: true)
-- `--watch`: Enable file watching and auto-rebuild
-- `--proxy-only`: Run only the proxy server (no file watching)
+- `--watch`: Explicitly enable file watching and auto-rebuild
 - `--init`: Create a default configuration file
 - `--version`: Show version information
+
+**Note:** File watching is automatically enabled when `build_cmd` and `run_cmd` are configured in your config file.
 
 ## Configuration
 
@@ -104,11 +96,11 @@ run_cmd: "./tmp/main"
 inject_script: true
 ```
 
-When `build_cmd` and `run_cmd` are configured, godevwatch automatically enables file watching mode.
+**Note:** When `build_cmd` and `run_cmd` are both configured, godevwatch automatically enables file watching mode.
 
-## Usage Modes
+## Usage
 
-### Mode 1: All-in-One (Recommended)
+### Standard Mode (Recommended)
 
 Use godevwatch for everything - file watching, building, running, and proxying.
 
@@ -132,78 +124,21 @@ inject_script: true
 godevwatch
 ```
 
-### Mode 2: Proxy-Only (Legacy Integration)
-
-Use godevwatch only for the proxy/live-reload, and use your own file watcher.
-
-**godevwatch.yaml**:
-```yaml
-proxy_port: 3000
-backend_port: 8080
-build_status_dir: tmp/.build-counters
-inject_script: true
-```
-
-**watchexec.sh**:
-```bash
-#!/bin/bash
-watchexec \
-  --exts go,templ \
-  --watch . \
-  --restart \
-  --stop-signal SIGTERM \
-  -- ./build.sh
-```
-
-**build.sh**:
-```bash
-#!/bin/bash
-set -e
-
-BUILD_ID=$(date +%s)-$$
-COUNTER_DIR="tmp/.build-counters"
-mkdir -p "$COUNTER_DIR"
-
-# Mark as building
-touch "$COUNTER_DIR/$BUILD_ID-building"
-
-# Build
-if ! templ generate || ! go build -o ./tmp/main .; then
-    rm -f "$COUNTER_DIR/$BUILD_ID-building"
-    touch "$COUNTER_DIR/$BUILD_ID-failed"
-    exit 1
-fi
-
-# Clean up on success
-rm -f "$COUNTER_DIR/$BUILD_ID-"*
-
-# Run
-./tmp/main
-```
-
-**Run**:
-```bash
-# Terminal 1
-./watchexec.sh
-
-# Terminal 2
-godevwatch --proxy-only
-```
-
 ## How It Works
 
 ### File Watching & Build Restart
 
 godevwatch uses `fsnotify` to watch for file changes. When files change:
 
-1. **Debouncing**: Rapid changes are debounced (100ms default)
-2. **Abort Current Build**: If a build is running, it's immediately killed (SIGTERM)
-3. **Start New Build**: Fresh build starts with latest changes
-4. **Process Termination**: Running app is gracefully killed before new builds
-5. **Build Execution**: Your `build_cmd` runs
-6. **Status Tracking**: Build status is tracked via filesystem markers (building, failed, aborted)
-7. **Application Restart**: On success, your `run_cmd` is executed
-8. **Live Reload**: Browser is notified via WebSocket
+1. **Directory Watching**: Watches the current directory and all subdirectories (except hidden dirs, `vendor`, `node_modules`, and `tmp`)
+2. **Pattern Matching**: Files are matched against `watch` patterns and filtered by `watch_ignore` patterns
+3. **Debouncing**: Rapid changes are debounced (100ms default)
+4. **Abort Current Build**: If a build is running, it's immediately killed (SIGTERM) and marked as "aborted"
+5. **Process Termination**: Running app is gracefully killed before starting a new build
+6. **Build Execution**: Your `build_cmd` runs (stdout/stderr are streamed to console)
+7. **Status Tracking**: Build status is tracked via filesystem markers (building, failed, aborted)
+8. **Application Restart**: On success, your `run_cmd` is executed
+9. **Live Reload**: Browser is notified via WebSocket when build status changes
 
 This approach mimics `watchexec --restart` behavior but integrated directly into the tool.
 
@@ -220,20 +155,22 @@ tmp/.build-counters/
 
 File naming: `{timestamp}-{pid}-{status}`
 
+The tracker automatically cleans up status files from older failed/aborted builds when a newer build succeeds, and removes all status files when a build completes successfully.
+
 Valid statuses:
 - `building`: Build in progress
 - `failed`: Build failed
-- `aborted`: Build was interrupted
-
-When a build completes successfully, all status files for that build are removed.
+- `aborted`: Build was interrupted by a new file change
 
 ### Proxy Server
 
 The proxy server:
-- Forwards requests to your Go backend
-- Injects live reload script into HTML responses
-- Serves a "waiting" page when backend is down
-- Provides WebSocket endpoint for real-time updates
+- Forwards requests to your Go backend on the configured port
+- Injects live reload script into HTML responses (when `inject_script: true`)
+- Serves a "waiting" page when backend server is not running
+- Provides WebSocket endpoint for real-time build status and server status updates
+- Uses `lsof` to check if the backend server is listening on the configured port
+- Polls backend server status every 2 seconds and broadcasts changes to clients
 
 ## API Endpoints
 
@@ -322,14 +259,15 @@ func main() {
 
 | Feature | godevwatch | air | modd | watchexec + custom |
 |---------|-----------|-----|------|--------------------|
-| File watching | ✅ Built-in | ✅ Built-in | ✅ Built-in | ✅ watchexec |
-| Build abort on change | ✅ Yes (--restart) | ❌ No | ❌ No | ✅ watchexec --restart |
+| File watching | ✅ Built-in (fsnotify) | ✅ Built-in | ✅ Built-in | ✅ watchexec |
+| Build abort on change | ✅ Yes | ❌ No | ❌ No | ✅ watchexec --restart |
 | Process management | ✅ Built-in | ✅ Built-in | ✅ Built-in | ⚠️ Manual |
-| Live reload | ✅ Built-in | ✅ Built-in | ❌ No | ⚠️ Manual |
-| Proxy server | ✅ Built-in | ❌ No | ❌ No | ⚠️ Separate tool |
-| Build status UI | ✅ Yes | ❌ No | ❌ No | ⚠️ Custom |
+| Live reload proxy | ✅ Built-in | ✅ Built-in | ❌ No | ⚠️ Manual |
+| Proxy server | ✅ Yes (with downtime handling) | ❌ No | ❌ No | ⚠️ Separate tool |
+| Build status tracking | ✅ WebSocket + file markers | ❌ No | ❌ No | ⚠️ Custom |
+| Ignore patterns | ✅ `watch_ignore` | ✅ `exclude_dir` | ✅ Filters | ⚠️ Manual |
 | Single binary | ✅ Yes | ✅ Yes | ✅ Yes | ❌ Multiple tools |
-| Zero config | ✅ Yes | ⚠️ Needs config | ⚠️ Needs config | ❌ Complex setup |
+| Auto-enable watch mode | ✅ Yes (when configured) | ⚠️ Needs config | ⚠️ Needs config | ❌ Complex setup |
 
 ## License
 
@@ -341,4 +279,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## Credits
 
-Inspired by live reload tools like browser-sync, webpack-dev-server, air, and watchexec - but designed specifically for Go development workflows with build queuing support.
+Inspired by live reload tools like browser-sync, webpack-dev-server, air, modd, and watchexec - but designed specifically for Go development workflows with build abort-and-restart behavior.
