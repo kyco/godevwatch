@@ -1,9 +1,11 @@
 package godevwatch
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -187,15 +189,11 @@ func (ps *ProxyServer) injectClientScript(resp *http.Response) error {
 		html = strings.Replace(html, "</body>", script+"</body>", 1)
 	}
 
-	// Update response
+	// Update response body and headers
 	newBody := []byte(html)
-	resp.Body = http.NoBody
+	resp.Body = io.NopCloser(bytes.NewReader(newBody))
 	resp.ContentLength = int64(len(newBody))
 	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(newBody)))
-
-	// Write the modified body
-	w := resp.Request.Context().Value(http.ResponseWriterContextKey).(http.ResponseWriter)
-	w.Write(newBody)
 
 	return nil
 }
