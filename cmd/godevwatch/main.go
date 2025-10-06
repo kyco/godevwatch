@@ -25,7 +25,6 @@ func main() {
 		statusDir    = flag.String("status-dir", "tmp/.build-counters", "Build status directory")
 		injectScript = flag.Bool("inject-script", true, "Inject live reload script into HTML responses")
 		watchMode    = flag.Bool("watch", false, "Enable file watching and auto-rebuild")
-		proxyOnly    = flag.Bool("proxy-only", false, "Run only the proxy server (no file watching)")
 		initConfig   = flag.Bool("init", false, "Create a default configuration file")
 		showVersion  = flag.Bool("version", false, "Show version information")
 	)
@@ -71,8 +70,8 @@ func main() {
 		}
 	}
 
-	// Determine mode
-	enableWatch := *watchMode || (!*proxyOnly && config.BuildCmd != "" && config.RunCmd != "")
+	// Determine mode: enable watch if explicitly requested or if build/run commands are configured
+	enableWatch := *watchMode || (config.BuildCmd != "" && config.RunCmd != "")
 
 	// Create build tracker
 	buildTracker := godevwatch.NewBuildTracker(config.BuildStatusDir)
