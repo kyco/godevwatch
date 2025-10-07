@@ -25,7 +25,7 @@ Create a config file and run everything with one command:
 
 ```bash
 # Create config
-godevwatch --init
+godevwatch init
 
 # Edit godevwatch.yaml to set your build_cmd and run_cmd
 
@@ -50,14 +50,17 @@ godevwatch \
   --inject-script=true
 ```
 
-Available flags:
+### Commands
+
+- `godevwatch init`: Create a default configuration file
+
+### Flags
+
 - `--config <path>`: Path to configuration file
 - `--proxy-port <port>`: Proxy server port (default: 3000)
 - `--backend-port <port>`: Backend server port (default: 8080)
 - `--status-dir <path>`: Build status directory (default: tmp/.build-status)
 - `--inject-script`: Inject live reload script into HTML (default: true)
-- `--watch`: Explicitly enable file watching and auto-rebuild
-- `--init`: Create a default configuration file
 - `--version`: Show version information
 
 **Note:** File watching is automatically enabled when `build_cmd` and `run_cmd` are configured in your config file.
