@@ -74,18 +74,18 @@ func main() {
 		}
 	}
 
-	// Enable watch mode if build/run commands are configured
-	enableWatch := config.BuildCmd != "" && config.RunCmd != ""
+	// Enable watch mode if build rules and run command are configured
+	enableWatch := len(config.BuildRules) > 0 && config.RunCmd != ""
 
 	if !enableWatch {
-		if config.BuildCmd == "" && config.RunCmd == "" {
-			log.Println("File watching disabled: build_cmd and run_cmd are not configured")
-		} else if config.BuildCmd == "" {
-			log.Println("File watching disabled: build_cmd is not configured")
+		if len(config.BuildRules) == 0 && config.RunCmd == "" {
+			log.Println("File watching disabled: build_rules and run_cmd are not configured")
+		} else if len(config.BuildRules) == 0 {
+			log.Println("File watching disabled: build_rules are not configured")
 		} else {
 			log.Println("File watching disabled: run_cmd is not configured")
 		}
-		log.Println("To enable file watching, configure both build_cmd and run_cmd in your config file")
+		log.Println("To enable file watching, configure both build_rules and run_cmd in your config file")
 	}
 
 	// Clean up any processes on the ports we're going to use

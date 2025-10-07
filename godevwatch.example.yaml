@@ -10,15 +10,20 @@ backend_port: 8080
 # Directory where build status files are stored
 build_status_dir: tmp/.build-status
 
-# File patterns to watch for changes
-watch:
-  - "**/*.go"
-  - "**/*.templ"
+# Build rules define conditional build steps based on file changes
+# Rules are executed in order, and only run when matching files change
+build_rules:
+  - name: "templ"
+    watch:
+      - "**/*.templ"
+    command: "templ generate"
 
-# Command to build your application
-build_cmd: "templ generate && go build -o ./tmp/main ."
+  - name: "go-build"
+    watch:
+      - "**/*.go"
+    command: "go build -o ./tmp/main ."
 
-# Command to run your application
+# Command to run your application after successful build
 run_cmd: "./tmp/main"
 
 # Whether to inject the live reload script into HTML responses
