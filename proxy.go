@@ -39,9 +39,7 @@ type ProxyServer struct {
 }
 
 // NewProxyServer creates a new proxy server
-func NewProxyServer(config *Config) (*ProxyServer, error) {
-	buildTracker := NewBuildTracker(config.BuildStatusDir)
-
+func NewProxyServer(config *Config, buildTracker *BuildTracker) (*ProxyServer, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)

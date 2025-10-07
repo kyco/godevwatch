@@ -114,8 +114,8 @@ func main() {
 		}
 	}
 
-	// Create proxy server
-	proxy, err := godevwatch.NewProxyServer(config)
+	// Create proxy server with shared build tracker
+	proxy, err := godevwatch.NewProxyServer(config, buildTracker)
 	if err != nil {
 		log.Fatalf("Failed to create proxy server: %v", err)
 	}

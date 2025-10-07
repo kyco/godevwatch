@@ -242,9 +242,10 @@ func main() {
     config.BuildCmd = "templ generate && go build -o ./tmp/main ."
     config.RunCmd = "./tmp/main"
 
+    // Create shared build tracker
     buildTracker := godevwatch.NewBuildTracker(config.BuildStatusDir)
 
-    // Start file watcher
+    // Start file watcher with build tracker
     watcher, err := godevwatch.NewFileWatcher(config, buildTracker)
     if err != nil {
         log.Fatal(err)
@@ -255,8 +256,8 @@ func main() {
         log.Fatal(err)
     }
 
-    // Start proxy server
-    proxy, err := godevwatch.NewProxyServer(config)
+    // Start proxy server with same build tracker instance
+    proxy, err := godevwatch.NewProxyServer(config, buildTracker)
     if err != nil {
         log.Fatal(err)
     }
