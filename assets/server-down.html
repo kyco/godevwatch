@@ -152,9 +152,9 @@
                 .join('')
             } else {
               if (hasSeenBuilds) {
-                buildStatus.innerHTML = '<div class="info-alert">refreshing<div class="spinner"></div></div>'
+                buildStatus.innerHTML = '<div class="info-alert">Build completed - reloading<div class="spinner"></div></div>'
               } else {
-                buildStatus.innerHTML = '<div class="info-alert">Waiting for backend server...</div>'
+                buildStatus.innerHTML = '<div class="info-alert">Waiting for first build...</div>'
               }
             }
           }
