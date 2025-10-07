@@ -21,34 +21,31 @@ func NewProcessManager(config *Config, buildTracker *BuildTracker) *ProcessManag
 	}
 }
 
-// StartBuild starts a new build, killing any running process
-func (pm *ProcessManager) StartBuild(buildID string) error {
+// StopCurrentProcess stops any currently running application process
+func (pm *ProcessManager) StopCurrentProcess(buildID string) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	// Kill any currently running process
+	// Kill any currently running process and WAIT for it to terminate
 	if pm.currentCmd != nil {
 		log.Printf("\033[33m[%s] Stopping previous process...\033[0m\n", buildID)
 		if err := pm.currentCmd.Kill(); err != nil {
-			log.Printf("Failed to kill process: %v", err)
+			// Only log if it's not already finished
+			if err.Error() != "os: process already finished" {
+				log.Printf("Warning: Error killing process: %v", err)
+			}
 		}
 		pm.currentCmd = nil
+		log.Printf("\033[33m[%s] Previous process stopped\033[0m\n", buildID)
 	}
 
 	return nil
 }
 
-// RunProcess runs the application process
+// RunProcess runs the application process (assumes previous process already stopped)
 func (pm *ProcessManager) RunProcess(buildID string) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-
-	// Kill any previously running process
-	if pm.currentCmd != nil {
-		if err := pm.currentCmd.Kill(); err != nil {
-			log.Printf("Failed to kill previous process: %v", err)
-		}
-	}
 
 	// Create new command
 	cmd := NewCommand(pm.config.RunCmd)

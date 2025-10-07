@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // Command represents a shell command with process management
@@ -73,25 +74,50 @@ func (c *Command) streamOutput(reader io.Reader, callback func(string)) {
 	}
 }
 
-// Kill terminates the command and all child processes
+// Kill terminates the command and all child processes, waiting for termination
 func (c *Command) Kill() error {
 	if c.cmd == nil || c.cmd.Process == nil {
 		return nil
 	}
 
+	pid := c.cmd.Process.Pid
+
 	// Kill the process group to ensure all children are terminated
-	pgid, err := syscall.Getpgid(c.cmd.Process.Pid)
+	pgid, err := syscall.Getpgid(pid)
 	if err != nil {
 		// Fallback to killing just the process
-		return c.cmd.Process.Kill()
+		if err := c.cmd.Process.Kill(); err != nil {
+			return err
+		}
+		// Wait for process to finish
+		c.cmd.Wait()
+		return nil
 	}
 
 	// Send SIGTERM to the process group
 	if err := syscall.Kill(-pgid, syscall.SIGTERM); err != nil {
-		return err
+		// If process doesn't exist, it's already dead
+		if err != syscall.ESRCH {
+			return err
+		}
 	}
 
-	return nil
+	// Wait for the process to actually terminate (with timeout)
+	done := make(chan error, 1)
+	go func() {
+		done <- c.cmd.Wait()
+	}()
+
+	select {
+	case <-done:
+		// Process terminated successfully
+		return nil
+	case <-time.After(2 * time.Second):
+		// Timeout - force kill
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		c.cmd.Wait() // Clean up zombie
+		return nil
+	}
 }
 
 // parseCommand parses a command string into program and arguments

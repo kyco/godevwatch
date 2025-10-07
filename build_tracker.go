@@ -37,14 +37,34 @@ func NewBuildTracker(statusDir string) *BuildTracker {
 	}
 }
 
-// NewBuild creates a new build ID
+// NewBuild creates a new build ID and sets it as current
 func (bt *BuildTracker) NewBuild() (string, error) {
 	if err := os.MkdirAll(bt.statusDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create status directory: %w", err)
 	}
 
 	buildID := fmt.Sprintf("%d-%d", time.Now().Unix(), os.Getpid())
+
+	// Write current build ID to file
+	currentBuildFile := filepath.Join(bt.statusDir, "current-build-id")
+	if err := os.WriteFile(currentBuildFile, []byte(buildID), 0644); err != nil {
+		return "", fmt.Errorf("failed to write current build ID: %w", err)
+	}
+
 	return buildID, nil
+}
+
+// GetCurrentBuildID returns the current build ID
+func (bt *BuildTracker) GetCurrentBuildID() (string, error) {
+	currentBuildFile := filepath.Join(bt.statusDir, "current-build-id")
+	data, err := os.ReadFile(currentBuildFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("failed to read current build ID: %w", err)
+	}
+	return string(data), nil
 }
 
 // SetStatus sets the status of a build

@@ -7,16 +7,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// BuildRule represents a conditional build rule
+type BuildRule struct {
+	Name    string   `yaml:"name"`
+	Watch   []string `yaml:"watch"`
+	Command string   `yaml:"command"`
+}
+
 // Config represents the configuration for the dev server
 type Config struct {
-	ProxyPort      int      `yaml:"proxy_port"`
-	BackendPort    int      `yaml:"backend_port"`
-	BuildStatusDir string   `yaml:"build_status_dir"`
-	Watch          []string `yaml:"watch"`
-	WatchIgnore    []string `yaml:"watch_ignore"`
-	BuildCmd       string   `yaml:"build_cmd"`
-	RunCmd         string   `yaml:"run_cmd"`
-	InjectScript   bool     `yaml:"inject_script"`
+	ProxyPort      int         `yaml:"proxy_port"`
+	BackendPort    int         `yaml:"backend_port"`
+	BuildStatusDir string      `yaml:"build_status_dir"`
+	BuildRules     []BuildRule `yaml:"build_rules"`
+	RunCmd         string      `yaml:"run_cmd"`
+	InjectScript   bool        `yaml:"inject_script"`
 }
 
 // DefaultConfig returns a default configuration
@@ -25,11 +30,20 @@ func DefaultConfig() *Config {
 		ProxyPort:      3000,
 		BackendPort:    8080,
 		BuildStatusDir: "tmp/.build-status",
-		Watch:          []string{"**/*.go", "**/*.templ"},
-		WatchIgnore:    []string{"**/*_templ.go"},
-		BuildCmd:       "templ generate && go build -o ./tmp/main .",
-		RunCmd:         "./tmp/main",
-		InjectScript:   true,
+		BuildRules: []BuildRule{
+			{
+				Name:    "templ",
+				Watch:   []string{"**/*.templ"},
+				Command: "templ generate",
+			},
+			{
+				Name:    "go-build",
+				Watch:   []string{"**/*.go"},
+				Command: "go build -o ./tmp/main .",
+			},
+		},
+		RunCmd:       "./tmp/main",
+		InjectScript: true,
 	}
 }
 
